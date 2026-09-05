@@ -25,7 +25,7 @@ jobs:
 
       - name: Android APK bauen
         run: |
-          chmod +x gradlew
+  
           gradle assembleDebug
 
       - name: APK bereitstellen
