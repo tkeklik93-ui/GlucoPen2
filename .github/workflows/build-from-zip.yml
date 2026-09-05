@@ -12,10 +12,15 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Java einrichten
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
+
+      - name: Gradle einrichten
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
 
       - name: ZIP entpacken
         run: |
@@ -23,9 +28,63 @@ jobs:
           cp -r GlucoPen_Android/. .
           rm -rf GlucoPen_Android
 
+      - name: Java 17 für Android konfigurieren
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path("app/build.gradle.kts")
+          s = p.read_text()
+
+          old = '''android { namespace = "de.glucopen.app"; compileSdk = 35
+              defaultConfig { applicationId = "de.glucopen.app"; minSdk = 26; targetSdk = 35; versionCode = 1; versionName = "1.0" }
+          }'''
+
+          new = '''android {
+              namespace = "de.glucopen.app"
+              compileSdk = 35
+
+              defaultConfig {
+                  applicationId = "de.glucopen.app"
+                  minSdk = 26
+                  targetSdk = 35
+                  versionCode = 1
+                  versionName = "1.0"
+              }
+
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
+          }'''
+
+          if old in s:
+              s = s.replace(old, new)
+          elif "compileOptions" not in s:
+              s = s.replace(
+                  "android {",
+                  '''android {
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
+          ''',
+                  1
+              )
+
+          p.write_text(s)
+          PY
+
       - name: Android APK bauen
         run: |
-  
           gradle assembleDebug
 
       - name: APK bereitstellen
