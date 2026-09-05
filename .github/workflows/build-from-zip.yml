@@ -22,17 +22,27 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-      - name: Neue GlucoPen ZIP finden
+      - name: Neue GlucoPen ZIP finden und entpacken
         run: |
           ZIP=$(find . -maxdepth 1 -name 'GlucoPen_Android_*.zip' | sort | tail -n 1)
+
+          if [ -z "$ZIP" ]; then
+            echo "Keine GlucoPen ZIP gefunden!"
+            exit 1
+          fi
+
           echo "Verwendete ZIP: $ZIP"
-          unzip -o "$ZIP"
-          
-          DIR=$(find . -maxdepth 1 -type d -name 'GlucoPen_Android_*' | sort | tail -n 1)
-          echo "Projektordner: $DIR"
-          
-          cp -r "$DIR"/. .
-          rm -rf "$DIR"
+
+          mkdir -p extracted
+          unzip -q "$ZIP" -d extracted
+
+          cp -r extracted/. .
+          rm -rf extracted
+
+          echo "Projektdateien:"
+          ls -la
+          echo "App:"
+          ls -la app
 
       - name: Java 17 konfigurieren
         run: |
